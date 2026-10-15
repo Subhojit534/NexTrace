@@ -196,21 +196,6 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
             </div>
           )}
         </div>
-
-        {/* Suggested Follow-up Prompt Pills */}
-        {message.suggested_followups && message.suggested_followups.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {message.suggested_followups.map((prompt, pIdx) => (
-              <button
-                key={pIdx}
-                onClick={() => onSelectFollowup(prompt)}
-                className="text-xs px-3 py-1.5 rounded-full bg-gemini-surface hover:bg-gemini-surfaceHover border border-gemini-border hover:border-gemini-accent/40 text-gemini-text hover:text-white transition shadow-sm text-left"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

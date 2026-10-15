@@ -174,7 +174,7 @@ export default function App() {
         ...prev,
         {
           role: 'assistant',
-          content: `### Imported Custom Architecture: \`${fileName}\`\n\n- **Validated Nodes:** \`${nodesCount}\`\n- **Validated Relationships:** \`${relsCount}\`\n- **Database Engine:** ${res.falkordb_connected ? 'FalkorDB Live Cluster' : 'In-Memory Graph Engine'}\n\nSuggested actions:\n1. Click any of the context-aware prompt pills below to simulate zero-day exploits on your imported workloads.\n2. Trace \`shortestPath()\` reachability to confidential data stores.\n3. Type your custom security alert or query below to begin autonomous investigation.`,
+          content: `### Imported Custom Architecture: \`${fileName}\`\n\n- **Validated Nodes:** \`${nodesCount}\`\n- **Validated Relationships:** \`${relsCount}\`\n- **Database Engine:** ${res.falkordb_connected ? 'FalkorDB Live Cluster' : 'In-Memory Graph Engine'}\n\nArchitecture loaded into the graph engine. You can now simulate zero-day exploits, trace shortest attack paths to confidential data stores, or ask any security question.`,
           model_used: selectedModel,
         },
       ]);

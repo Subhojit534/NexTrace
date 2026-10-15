@@ -74,24 +74,12 @@ export default function ChatArea({
     e.target.value = '';
   };
 
-  // Derive suggested prompt pills based on active preset or uploaded file
-  const suggestedPills = uploadedFile?.scenarios?.length
-    ? uploadedFile.scenarios.map((s) => (typeof s === 'string' ? s : s.text || s.title))
-    : activePresetData?.scenarios?.length
-    ? activePresetData.scenarios.map((s) => s.text || s.title)
-    : [
-        'Simulate CVE-2024-3094 RCE on Ingress gateway and isolate database',
-        'Identify blast radius of compromised auth token',
-        'Find shortest path to crown jewel database via Cypher',
-        'Sever compromised edges to contain breach',
-      ];
-
   return (
     <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] max-w-5xl w-full mx-auto px-4 overflow-hidden">
       {/* Scrollable Message Feed */}
       <div className="flex-1 overflow-y-auto pt-4 pb-32">
         {messages.length === 0 ? (
-          /* Clean Gemini Welcome Screen */
+          /* Clean Minimalist Gemini Welcome Screen */
           <div className="min-h-[65vh] flex flex-col items-center justify-center text-center px-4 animate-fade-in">
             {/* Header Sparkle & Title */}
             <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gemini-surface border border-gemini-border text-xs text-gemini-accent mb-6 shadow-sm">
@@ -107,37 +95,6 @@ export default function ChatArea({
             <p className="text-sm sm:text-base text-gemini-muted max-w-md mb-8 leading-relaxed">
               How can I assist your security investigation today? Upload an architecture JSON using the <strong className="text-white">+</strong> button below or ask any question to get started.
             </p>
-
-            {/* When a file is uploaded, show context-aware suggested prompt pills */}
-            {uploadedFile && (
-              <div className="w-full max-w-xl p-4 rounded-2xl bg-gemini-surface/80 border border-gemini-border text-left shadow-lg mb-4 animate-fade-in backdrop-blur">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-gemini-accent" />
-                    <span className="text-xs font-semibold text-white">{uploadedFile.name}</span>
-                  </div>
-                  <span className="text-[11px] text-gemini-muted">
-                    {uploadedFile.nodes} nodes · {uploadedFile.rels} edges
-                  </span>
-                </div>
-                <p className="text-xs text-gemini-muted mb-3">
-                  Architecture loaded. Choose a suggested scenario below or type your own prompt:
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {suggestedPills.map((pillText, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSubmit(pillText)}
-                      className="p-2.5 rounded-xl bg-gemini-card hover:bg-gemini-surfaceHover border border-gemini-border hover:border-gemini-accent/40 text-left transition group shadow-sm"
-                    >
-                      <p className="text-xs text-white group-hover:text-gemini-accent transition font-medium line-clamp-2">
-                        {pillText}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           /* Message List */
@@ -164,7 +121,7 @@ export default function ChatArea({
         )}
       </div>
 
-      {/* Floating Bottom Prompt Bar (Gemini Style) */}
+      {/* Floating Bottom Prompt Bar (Clean Gemini Style) */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gemini-bg via-gemini-bg/95 to-transparent pointer-events-none z-30">
         <div className="max-w-4xl mx-auto pointer-events-auto">
           {/* Uploaded File Chip */}
@@ -184,21 +141,6 @@ export default function ChatArea({
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
-
-          {/* Context Prompt Suggestions Carousel if file is uploaded or messages exist */}
-          {(uploadedFile || messages.length > 0) && (
-            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
-              {suggestedPills.slice(0, 4).map((pill, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSubmit(pill)}
-                  className="px-3 py-1 rounded-full bg-gemini-surface hover:bg-gemini-surfaceHover border border-gemini-border text-[11px] text-gemini-text whitespace-nowrap transition"
-                >
-                  {pill}
-                </button>
-              ))}
             </div>
           )}
 
