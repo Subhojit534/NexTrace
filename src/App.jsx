@@ -375,7 +375,6 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           user={user}
           setUser={setUser}
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
         {/* Main Chat Feed & Floating Input Bar */}
