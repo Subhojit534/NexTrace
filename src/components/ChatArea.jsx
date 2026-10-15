@@ -75,55 +75,57 @@ export default function ChatArea({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] max-w-5xl w-full mx-auto px-4 overflow-hidden">
+    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] w-full overflow-hidden">
       {/* Scrollable Message Feed */}
-      <div className="flex-1 overflow-y-auto pt-4 pb-32">
-        {messages.length === 0 ? (
-          /* Clean Minimalist Gemini Welcome Screen */
-          <div className="min-h-[65vh] flex flex-col items-center justify-center text-center px-4 animate-fade-in">
-            {/* Header Sparkle & Title */}
-            <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gemini-surface border border-gemini-border text-xs text-gemini-accent mb-6 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Next-Gen FalkorDB Autonomous SecOps</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">
-              <span className="bg-gradient-to-r from-blue-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent">
-                Hello, Security Lead
-              </span>
-            </h1>
-            <p className="text-sm sm:text-base text-gemini-muted max-w-md mb-8 leading-relaxed">
-              How can I assist your security investigation today? Upload an architecture JSON using the <strong className="text-white">+</strong> button below or ask any question to get started.
-            </p>
-          </div>
-        ) : (
-          /* Message List */
-          <div className="space-y-4">
-            {messages.map((msg, idx) => (
-              <MessageBubble
-                key={idx}
-                message={msg}
-                onSelectFollowup={handleSubmit}
-                onOpenRemediation={onOpenRemediation}
-              />
-            ))}
-
-            {isLoading && (
-              <div className="flex items-center space-x-3 my-6 text-gemini-muted text-xs animate-pulse pl-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shrink-0">
-                  <Loader2 className="w-4 h-4 text-white animate-spin" />
-                </div>
-                <span>Autonomous Agent is querying FalkorDB, computing shortest paths, and evaluating blast radius...</span>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
+        <div className="max-w-4xl w-full mx-auto">
+          {messages.length === 0 ? (
+            /* Clean Minimalist Gemini Welcome Screen */
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 animate-fade-in my-auto">
+              {/* Header Sparkle & Title */}
+              <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gemini-surface border border-gemini-border text-xs text-gemini-accent mb-6 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Next-Gen FalkorDB Autonomous SecOps</span>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+
+              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">
+                <span className="bg-gradient-to-r from-blue-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent">
+                  Hello, Security Lead
+                </span>
+              </h1>
+              <p className="text-sm sm:text-base text-gemini-muted max-w-md mb-8 leading-relaxed">
+                How can I assist your security investigation today? Upload an architecture JSON using the <strong className="text-white">+</strong> button below or ask any question to get started.
+              </p>
+            </div>
+          ) : (
+            /* Message List */
+            <div className="space-y-4">
+              {messages.map((msg, idx) => (
+                <MessageBubble
+                  key={idx}
+                  message={msg}
+                  onSelectFollowup={handleSubmit}
+                  onOpenRemediation={onOpenRemediation}
+                />
+              ))}
+
+              {isLoading && (
+                <div className="flex items-center space-x-3 my-6 text-gemini-muted text-xs animate-pulse pl-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shrink-0">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                  <span>Autonomous Agent is querying FalkorDB, computing shortest paths, and evaluating blast radius...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Floating Bottom Prompt Bar (Clean Gemini Style) */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gemini-bg via-gemini-bg/95 to-transparent pointer-events-none z-30">
-        <div className="max-w-4xl mx-auto pointer-events-auto">
+      {/* Centered Bottom Prompt Bar */}
+      <div className="w-full px-4 pb-4 pt-2 bg-gradient-to-t from-gemini-bg via-gemini-bg/95 to-transparent">
+        <div className="max-w-4xl w-full mx-auto">
           {/* Uploaded File Chip */}
           {uploadedFile && (
             <div className="mb-2 flex items-center justify-between px-3 py-1.5 rounded-xl bg-gemini-surface border border-gemini-border text-xs text-white shadow-lg animate-fade-in w-fit">
