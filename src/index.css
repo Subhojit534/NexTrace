@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gemini-bg text-gemini-text font-sans antialiased;
+    color-scheme: dark;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #131314;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333538;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444746;
+}
+
+/* Smooth pulse animation */
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 12px rgba(138, 180, 248, 0.4));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(138, 180, 248, 0.7));
+  }
+}
+
+.gemini-glow {
+  animation: glow 3s ease-in-out infinite;
+}
