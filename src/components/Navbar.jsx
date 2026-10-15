@@ -4,6 +4,7 @@ import {
   Settings,
   LogIn,
   LogOut,
+  Menu,
 } from 'lucide-react';
 import { signInWithGoogle, signOutUser, isSupabaseConfigured } from '../services/supabase';
 
@@ -11,6 +12,7 @@ export default function Navbar({
   onOpenSettings,
   user,
   setUser,
+  onToggleSidebar,
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -33,9 +35,18 @@ export default function Navbar({
   };
 
   return (
-    <header className="h-16 border-b border-gemini-border bg-gemini-bg/95 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-40">
-      {/* Brand & Title */}
+    <header className="h-16 border-b border-gemini-border bg-gemini-bg/95 backdrop-blur px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+      {/* Brand & Left Controls */}
       <div className="flex items-center space-x-3">
+        {/* Sidebar Hamburger Button */}
+        <button
+          onClick={onToggleSidebar}
+          className="p-2 rounded-xl hover:bg-gemini-surface text-gemini-muted hover:text-white transition"
+          title="Toggle chat history"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shadow-lg shadow-purple-500/20">
           <Sparkles className="w-5 h-5 text-white" />
         </div>

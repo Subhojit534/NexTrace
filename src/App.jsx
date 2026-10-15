@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import SettingsModal from './components/SettingsModal';
 import RemediationModal from './components/RemediationModal';
@@ -13,6 +14,14 @@ import {
   getStoredSettings,
 } from './services/api';
 import { getCurrentUser, supabase } from './services/supabase';
+import {
+  loadSessions,
+  saveSessions,
+  getActiveSessionId,
+  setActiveSessionId,
+  createNewSession,
+  deriveChatTitle,
+} from './services/chatStorage';
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -25,6 +34,11 @@ export default function App() {
   const [falkorConnected, setFalkorConnected] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
 
+  // Chat Sessions & History State (Google Gemini style)
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionIdState] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   // User Auth State
   const [user, setUser] = useState(null);
 
@@ -33,10 +47,33 @@ export default function App() {
   const [isRemediationOpen, setIsRemediationOpen] = useState(false);
   const [activeRemediationBundle, setActiveRemediationBundle] = useState({});
 
-  // Initialize App Data
+  // 1. Initialize Sessions from LocalStorage
+  useEffect(() => {
+    const stored = loadSessions();
+    if (stored.length > 0) {
+      setSessions(stored);
+      const savedActiveId = getActiveSessionId();
+      const current = stored.find((s) => s.id === savedActiveId) || stored[0];
+      setActiveSessionIdState(current.id);
+      setActiveSessionId(current.id);
+      setMessages(current.messages || []);
+      setUploadedFile(current.uploadedFile || null);
+      if (current.presetId) setActivePreset(current.presetId);
+    } else {
+      const initial = createNewSession('New Chat');
+      setSessions([initial]);
+      setActiveSessionIdState(initial.id);
+      setActiveSessionId(initial.id);
+      saveSessions([initial]);
+      setMessages([]);
+      setUploadedFile(null);
+    }
+  }, []);
+
+  // 2. Initialize App Data & Health
   useEffect(() => {
     const initApp = async () => {
-      // 1. Load User
+      // Load User
       const u = await getCurrentUser();
       setUser(u);
 
@@ -48,13 +85,13 @@ export default function App() {
         });
       }
 
-      // 2. Load Settings
+      // Load Settings
       const settings = getStoredSettings();
       if (settings.selectedModel) {
         setSelectedModel(settings.selectedModel);
       }
 
-      // 3. Health & FalkorDB Status
+      // Health & FalkorDB Status
       try {
         const health = await checkHealth();
         setFalkorConnected(Boolean(health.falkordb_connected));
@@ -65,7 +102,7 @@ export default function App() {
         console.warn('API health check error:', err);
       }
 
-      // 4. Models
+      // Models
       try {
         const m = await fetchModels();
         setModels(m);
@@ -73,7 +110,7 @@ export default function App() {
         console.warn('Fetch models error:', err);
       }
 
-      // 5. Presets
+      // Presets
       try {
         const pRes = await fetchPresets();
         if (pRes.presets) {
@@ -91,6 +128,84 @@ export default function App() {
     initApp();
   }, []);
 
+  // Helper to persist current session updates to sessions state & localStorage
+  const persistSessionUpdate = (newMessages, newFile = undefined, customTitle = null) => {
+    setSessions((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id === activeSessionId) {
+          let title = s.title;
+          if (customTitle) {
+            title = customTitle;
+          } else if ((s.title === 'New Chat' || !s.title) && newMessages.length > 0) {
+            const firstUserMsg = newMessages.find((m) => m.role === 'user');
+            if (firstUserMsg) {
+              title = deriveChatTitle(firstUserMsg.content);
+            }
+          }
+          return {
+            ...s,
+            title,
+            messages: newMessages,
+            uploadedFile: newFile !== undefined ? newFile : s.uploadedFile,
+            presetId: activePreset,
+            updatedAt: Date.now(),
+          };
+        }
+        return s;
+      });
+      saveSessions(updated);
+      return updated;
+    });
+  };
+
+  // Handle Switch Session
+  const handleSelectSession = (sessionId) => {
+    const target = sessions.find((s) => s.id === sessionId);
+    if (!target) return;
+    setActiveSessionIdState(sessionId);
+    setActiveSessionId(sessionId);
+    setMessages(target.messages || []);
+    setUploadedFile(target.uploadedFile || null);
+    if (target.presetId) setActivePreset(target.presetId);
+  };
+
+  // Handle "+ New chat" Button
+  const handleNewChat = () => {
+    const fresh = createNewSession('New Chat');
+    const updated = [fresh, ...sessions];
+    setSessions(updated);
+    setActiveSessionIdState(fresh.id);
+    setActiveSessionId(fresh.id);
+    saveSessions(updated);
+    setMessages([]);
+    setUploadedFile(null);
+  };
+
+  // Handle Delete Session
+  const handleDeleteSession = (sessionId) => {
+    const remaining = sessions.filter((s) => s.id !== sessionId);
+    if (remaining.length === 0) {
+      const brandNew = createNewSession('New Chat');
+      setSessions([brandNew]);
+      setActiveSessionIdState(brandNew.id);
+      setActiveSessionId(brandNew.id);
+      saveSessions([brandNew]);
+      setMessages([]);
+      setUploadedFile(null);
+    } else {
+      setSessions(remaining);
+      saveSessions(remaining);
+      if (activeSessionId === sessionId) {
+        const next = remaining[0];
+        setActiveSessionIdState(next.id);
+        setActiveSessionId(next.id);
+        setMessages(next.messages || []);
+        setUploadedFile(next.uploadedFile || null);
+        if (next.presetId) setActivePreset(next.presetId);
+      }
+    }
+  };
+
   // Handle Preset Selection
   const handleSelectPreset = async (presetId) => {
     setActivePreset(presetId);
@@ -101,14 +216,17 @@ export default function App() {
       const detail = await fetchPresetDetail(presetId);
       setActivePresetData(detail);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `### Switched Architecture to **${detail.name || presetId}**\n\nLoaded **${res.nodes_count} nodes** and **${res.relationships_count} relationships** into FalkorDB.\n\nYou can now run zero-day attack simulations, inspect public gateways, or trace attack paths to crown jewel stores.`,
-          model_used: selectedModel,
-        },
-      ]);
+      const sysMsg = {
+        role: 'assistant',
+        content: `### Switched Architecture to **${detail.name || presetId}**\n\nLoaded **${res.nodes_count} nodes** and **${res.relationships_count} relationships** into FalkorDB.\n\nYou can now run zero-day attack simulations, inspect public gateways, or trace attack paths to crown jewel stores.`,
+        model_used: selectedModel,
+      };
+
+      setMessages((prev) => {
+        const next = [...prev, sysMsg];
+        persistSessionUpdate(next, null);
+        return next;
+      });
     } catch (err) {
       alert(`Failed to load preset: ${err.message}`);
     } finally {
@@ -124,39 +242,11 @@ export default function App() {
       const nodesCount = res.nodes_count || rawJson.nodes?.length || 0;
       const relsCount = res.relationships_count || rawJson.relationships?.length || rawJson.edges?.length || 0;
 
-      // Derive context-aware prompt suggestions for this specific topology
-      let parsedScenarios = [];
-      if (rawJson.scenarios) {
-        if (Array.isArray(rawJson.scenarios)) {
-          parsedScenarios = rawJson.scenarios.map((s) => (typeof s === 'string' ? { title: s, text: s } : s));
-        } else if (typeof rawJson.scenarios === 'object') {
-          parsedScenarios = Object.entries(rawJson.scenarios).map(([title, s]) => ({ title, text: s.text || s }));
-        }
-      }
-
-      if (parsedScenarios.length === 0) {
-        // Automatically inspect nodes to synthesize intelligent prompt pills
-        const nodeList = Array.isArray(rawJson.nodes) ? rawJson.nodes : [];
-        const nodeNames = nodeList.map((n) => (typeof n === 'string' ? n : (n.name || n.id || n.properties?.name || 'Service'))).filter(Boolean);
-        
-        const ingressCandidate = nodeNames.find((n) => /ingress|gateway|proxy|router|frontend|edge|web|api/i.test(n)) || nodeNames[0] || 'Ingress';
-        const crownCandidate = nodeNames.find((n) => /db|database|vault|store|secret|customer|payment|data/i.test(n)) || nodeNames[nodeNames.length - 1] || 'Crown Jewel DB';
-        const coreCandidate = nodeNames.find((n) => n !== ingressCandidate && n !== crownCandidate) || nodeNames[1] || ingressCandidate;
-
-        parsedScenarios = [
-          { title: `Simulate RCE on ${ingressCandidate}`, text: `Simulate CVE-2024-3094 RCE on ${ingressCandidate} and trace reachability to crown jewels` },
-          { title: `Identify blast radius of ${coreCandidate}`, text: `Identify multi-hop downstream blast radius from ${coreCandidate}` },
-          { title: `Shortest path to ${crownCandidate}`, text: `Find shortest path from ${ingressCandidate} to ${crownCandidate} via Cypher` },
-          { title: `Sever compromised edges from ${coreCandidate}`, text: `Sever compromised communication edges to contain breach` },
-        ];
-      }
-
       const fileData = {
         name: fileName,
         rawJson,
         nodes: nodesCount,
         rels: relsCount,
-        scenarios: parsedScenarios,
       };
 
       setUploadedFile(fileData);
@@ -167,17 +257,19 @@ export default function App() {
         description: `Imported user graph with ${nodesCount} nodes and ${relsCount} edges.`,
         node_count: nodesCount,
         relationship_count: relsCount,
-        scenarios: fileData.scenarios,
       });
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `### Imported Custom Architecture: \`${fileName}\`\n\n- **Validated Nodes:** \`${nodesCount}\`\n- **Validated Relationships:** \`${relsCount}\`\n- **Database Engine:** ${res.falkordb_connected ? 'FalkorDB Live Cluster' : 'In-Memory Graph Engine'}\n\nArchitecture loaded into the graph engine. You can now simulate zero-day exploits, trace shortest attack paths to confidential data stores, or ask any security question.`,
-          model_used: selectedModel,
-        },
-      ]);
+      const importMsg = {
+        role: 'assistant',
+        content: `### Imported Custom Architecture: \`${fileName}\`\n\n- **Validated Nodes:** \`${nodesCount}\`\n- **Validated Relationships:** \`${relsCount}\`\n- **Database Engine:** ${res.falkordb_connected ? 'FalkorDB Live Cluster' : 'In-Memory Graph Engine'}\n\nArchitecture loaded into the graph engine. You can now simulate zero-day exploits, trace shortest attack paths to confidential data stores, or ask any security question.`,
+        model_used: selectedModel,
+      };
+
+      setMessages((prev) => {
+        const next = [...prev, importMsg];
+        persistSessionUpdate(next, fileData, `Architecture: ${fileName}`);
+        return next;
+      });
     } catch (err) {
       alert(`Failed to ingest custom JSON: ${err.message}`);
     } finally {
@@ -198,7 +290,9 @@ export default function App() {
       attachedFile: uploadedFile ? uploadedFile.name : null,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const nextMessagesWithUser = [...messages, userMsg];
+    setMessages(nextMessagesWithUser);
+    persistSessionUpdate(nextMessagesWithUser);
     setIsLoading(true);
 
     try {
@@ -235,44 +329,71 @@ export default function App() {
         model_used: res.model_used || selectedModel,
       };
 
-      setMessages((prev) => [...prev, agentMsg]);
+      setMessages((prev) => {
+        const nextWithAgent = [...prev, agentMsg];
+        persistSessionUpdate(nextWithAgent);
+        return nextWithAgent;
+      });
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `### Error Processing Investigation\n\n${err.message}\n\nPlease verify that the backend API is running and that your FalkorDB credentials / API keys are configured properly in Settings.`,
-        },
-      ]);
+      const errorMsg = {
+        role: 'assistant',
+        content: `### Error Processing Investigation\n\n${err.message}\n\nPlease verify that the backend API is running and that your FalkorDB credentials / API keys are configured properly in Settings.`,
+      };
+      setMessages((prev) => {
+        const nextWithError = [...prev, errorMsg];
+        persistSessionUpdate(nextWithError);
+        return nextWithError;
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gemini-bg flex flex-col font-sans text-gemini-text selection:bg-gemini-accent selection:text-gemini-bg">
-      {/* Top Navbar */}
-      <Navbar
+    <div className="min-h-screen bg-gemini-bg flex font-sans text-gemini-text selection:bg-gemini-accent selection:text-gemini-bg overflow-x-hidden">
+      {/* Gemini Chat History Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        user={user}
-        setUser={setUser}
+        falkorConnected={falkorConnected}
       />
 
-      {/* Main Chat Feed & Floating Input Bar */}
-      <ChatArea
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-        activePreset={activePreset}
-        activePresetData={activePresetData}
-        onUploadJson={handleUploadJson}
-        uploadedFile={uploadedFile}
-        onRemoveUploadedFile={handleRemoveUploadedFile}
-        onOpenRemediation={(bundle) => {
-          setActiveRemediationBundle(bundle);
-          setIsRemediationOpen(true);
-        }}
-      />
+      {/* Main Workspace Feed */}
+      <div
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'md:ml-64' : 'md:ml-16'
+        }`}
+      >
+        {/* Top Navbar */}
+        <Navbar
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          user={user}
+          setUser={setUser}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+
+        {/* Main Chat Feed & Floating Input Bar */}
+        <ChatArea
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          activePreset={activePreset}
+          activePresetData={activePresetData}
+          onUploadJson={handleUploadJson}
+          uploadedFile={uploadedFile}
+          onRemoveUploadedFile={handleRemoveUploadedFile}
+          onOpenRemediation={(bundle) => {
+            setActiveRemediationBundle(bundle);
+            setIsRemediationOpen(true);
+          }}
+        />
+      </div>
 
       {/* Modals */}
       <SettingsModal
