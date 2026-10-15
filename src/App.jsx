@@ -21,6 +21,9 @@ import {
   setActiveSessionId,
   createNewSession,
   deriveChatTitle,
+  syncCloudSessions,
+  saveSessionToCloud,
+  deleteSessionFromCloud,
 } from './services/chatStorage';
 
 export default function App() {
@@ -47,33 +50,9 @@ export default function App() {
   const [isRemediationOpen, setIsRemediationOpen] = useState(false);
   const [activeRemediationBundle, setActiveRemediationBundle] = useState({});
 
-  // 1. Initialize Sessions from LocalStorage
+  // 1. Initialize User & Auth Listener
   useEffect(() => {
-    const stored = loadSessions();
-    if (stored.length > 0) {
-      setSessions(stored);
-      const savedActiveId = getActiveSessionId();
-      const current = stored.find((s) => s.id === savedActiveId) || stored[0];
-      setActiveSessionIdState(current.id);
-      setActiveSessionId(current.id);
-      setMessages(current.messages || []);
-      setUploadedFile(current.uploadedFile || null);
-      if (current.presetId) setActivePreset(current.presetId);
-    } else {
-      const initial = createNewSession('New Chat');
-      setSessions([initial]);
-      setActiveSessionIdState(initial.id);
-      setActiveSessionId(initial.id);
-      saveSessions([initial]);
-      setMessages([]);
-      setUploadedFile(null);
-    }
-  }, []);
-
-  // 2. Initialize App Data & Health
-  useEffect(() => {
-    const initApp = async () => {
-      // Load User
+    const initAuth = async () => {
       const u = await getCurrentUser();
       setUser(u);
 
@@ -81,10 +60,60 @@ export default function App() {
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
             setUser(session.user);
+          } else {
+            setUser({
+              id: 'guest',
+              email: 'guest@demo.local',
+              user_metadata: { full_name: 'Guest Analyst' },
+              isGuest: true,
+            });
           }
         });
       }
+    };
+    initAuth();
+  }, []);
 
+  // 2. Initialize Sessions Scoped Per Google Account & Sync from Cloud
+  useEffect(() => {
+    const initUserSessions = async () => {
+      const uid = user?.id || 'guest';
+      let userSessions = loadSessions(uid);
+
+      // If signed in with Google via Supabase, sync from cloud across devices
+      if (user && !user.isGuest) {
+        const cloudSessions = await syncCloudSessions(user.id);
+        if (cloudSessions && cloudSessions.length > 0) {
+          userSessions = cloudSessions;
+        }
+      }
+
+      if (userSessions.length > 0) {
+        setSessions(userSessions);
+        const savedActiveId = getActiveSessionId(uid);
+        const current = userSessions.find((s) => s.id === savedActiveId) || userSessions[0];
+        setActiveSessionIdState(current.id);
+        setActiveSessionId(current.id, uid);
+        setMessages(current.messages || []);
+        setUploadedFile(current.uploadedFile || null);
+        if (current.presetId) setActivePreset(current.presetId);
+      } else {
+        const initial = createNewSession('New Chat');
+        setSessions([initial]);
+        setActiveSessionIdState(initial.id);
+        setActiveSessionId(initial.id, uid);
+        saveSessions([initial], uid);
+        setMessages([]);
+        setUploadedFile(null);
+      }
+    };
+
+    initUserSessions();
+  }, [user?.id]);
+
+  // 3. Initialize Health & Graph Presets
+  useEffect(() => {
+    const initApp = async () => {
       // Load Settings
       const settings = getStoredSettings();
       if (settings.selectedModel) {
@@ -128,9 +157,11 @@ export default function App() {
     initApp();
   }, []);
 
-  // Helper to persist current session updates to sessions state & localStorage
+  // Helper to persist current session updates to sessions state, localStorage & Supabase Cloud
   const persistSessionUpdate = (newMessages, newFile = undefined, customTitle = null) => {
+    const uid = user?.id || 'guest';
     setSessions((prev) => {
+      let targetSession = null;
       const updated = prev.map((s) => {
         if (s.id === activeSessionId) {
           let title = s.title;
@@ -142,7 +173,7 @@ export default function App() {
               title = deriveChatTitle(firstUserMsg.content);
             }
           }
-          return {
+          targetSession = {
             ...s,
             title,
             messages: newMessages,
@@ -150,20 +181,26 @@ export default function App() {
             presetId: activePreset,
             updatedAt: Date.now(),
           };
+          return targetSession;
         }
         return s;
       });
-      saveSessions(updated);
+
+      saveSessions(updated, uid);
+      if (targetSession && user && !user.isGuest) {
+        saveSessionToCloud(targetSession, user.id);
+      }
       return updated;
     });
   };
 
   // Handle Switch Session
   const handleSelectSession = (sessionId) => {
+    const uid = user?.id || 'guest';
     const target = sessions.find((s) => s.id === sessionId);
     if (!target) return;
     setActiveSessionIdState(sessionId);
-    setActiveSessionId(sessionId);
+    setActiveSessionId(sessionId, uid);
     setMessages(target.messages || []);
     setUploadedFile(target.uploadedFile || null);
     if (target.presetId) setActivePreset(target.presetId);
@@ -171,34 +208,46 @@ export default function App() {
 
   // Handle "+ New chat" Button
   const handleNewChat = () => {
+    const uid = user?.id || 'guest';
     const fresh = createNewSession('New Chat');
     const updated = [fresh, ...sessions];
     setSessions(updated);
     setActiveSessionIdState(fresh.id);
-    setActiveSessionId(fresh.id);
-    saveSessions(updated);
+    setActiveSessionId(fresh.id, uid);
+    saveSessions(updated, uid);
+    if (user && !user.isGuest) {
+      saveSessionToCloud(fresh, user.id);
+    }
     setMessages([]);
     setUploadedFile(null);
   };
 
   // Handle Delete Session
   const handleDeleteSession = (sessionId) => {
+    const uid = user?.id || 'guest';
     const remaining = sessions.filter((s) => s.id !== sessionId);
+    if (user && !user.isGuest) {
+      deleteSessionFromCloud(sessionId, user.id);
+    }
+
     if (remaining.length === 0) {
       const brandNew = createNewSession('New Chat');
       setSessions([brandNew]);
       setActiveSessionIdState(brandNew.id);
-      setActiveSessionId(brandNew.id);
-      saveSessions([brandNew]);
+      setActiveSessionId(brandNew.id, uid);
+      saveSessions([brandNew], uid);
+      if (user && !user.isGuest) {
+        saveSessionToCloud(brandNew, user.id);
+      }
       setMessages([]);
       setUploadedFile(null);
     } else {
       setSessions(remaining);
-      saveSessions(remaining);
+      saveSessions(remaining, uid);
       if (activeSessionId === sessionId) {
         const next = remaining[0];
         setActiveSessionIdState(next.id);
-        setActiveSessionId(next.id);
+        setActiveSessionId(next.id, uid);
         setMessages(next.messages || []);
         setUploadedFile(next.uploadedFile || null);
         if (next.presetId) setActivePreset(next.presetId);
