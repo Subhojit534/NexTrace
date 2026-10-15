@@ -67,7 +67,7 @@ export default function Navbar({
         <button
           onClick={onOpenSettings}
           className="p-2 rounded-xl bg-gemini-surface hover:bg-gemini-surfaceHover border border-gemini-border text-gemini-text transition"
-          title="Settings (API Keys & FalkorDB)"
+          title="Settings (FalkorDB Database)"
         >
           <Settings className="w-4 h-4 text-gemini-muted hover:text-white" />
         </button>

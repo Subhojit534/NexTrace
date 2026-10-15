@@ -337,7 +337,7 @@ export default function App() {
     } catch (err) {
       const errorMsg = {
         role: 'assistant',
-        content: `### Error Processing Investigation\n\n${err.message}\n\nPlease verify that the backend API is running and that your FalkorDB credentials / API keys are configured properly in Settings.`,
+        content: `### Error Processing Investigation\n\n${err.message}\n\nPlease verify that the backend API is running and that your FalkorDB credentials are configured properly in Settings.`,
       };
       setMessages((prev) => {
         const nextWithError = [...prev, errorMsg];
