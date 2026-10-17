@@ -7,6 +7,12 @@
 
 import { supabase, isSupabaseConfigured } from './supabase';
 
+export function isUserGuest(userId) {
+  if (!userId) return true;
+  if (typeof userId === 'object') return Boolean(userId.isGuest);
+  return userId === 'guest' || userId === 'guest-analyst';
+}
+
 export function getStorageKey(userId) {
   const safeId = userId || 'guest';
   return `nextrace_chat_sessions_${safeId}`;
@@ -22,6 +28,10 @@ export function generateSessionId() {
 }
 
 export function loadSessions(userId) {
+  if (isUserGuest(userId)) {
+    // In guest mode, chats are never loaded from persistent storage
+    return [];
+  }
   try {
     const key = getStorageKey(userId);
     const raw = localStorage.getItem(key);
@@ -35,6 +45,10 @@ export function loadSessions(userId) {
 }
 
 export function saveSessions(sessions, userId) {
+  if (isUserGuest(userId)) {
+    // In guest mode, chats are NOT stored in history
+    return;
+  }
   try {
     const key = getStorageKey(userId);
     localStorage.setItem(key, JSON.stringify(sessions));
@@ -44,11 +58,13 @@ export function saveSessions(sessions, userId) {
 }
 
 export function getActiveSessionId(userId) {
+  if (isUserGuest(userId)) return null;
   const key = getActiveSessionKey(userId);
   return localStorage.getItem(key) || null;
 }
 
 export function setActiveSessionId(id, userId) {
+  if (isUserGuest(userId)) return;
   const key = getActiveSessionKey(userId);
   if (id) {
     localStorage.setItem(key, id);

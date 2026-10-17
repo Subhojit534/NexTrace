@@ -13,7 +13,7 @@ import {
   sendChatMessage,
   getStoredSettings,
 } from './services/api';
-import { getCurrentUser, supabase } from './services/supabase';
+import { getCurrentUser, supabase, signInWithGoogle, isSupabaseConfigured } from './services/supabase';
 import {
   loadSessions,
   saveSessions,
@@ -76,18 +76,35 @@ export default function App() {
     initAuth();
   }, []);
 
+  const handleSignIn = async () => {
+    if (isSupabaseConfigured) {
+      await signInWithGoogle();
+    } else {
+      alert('Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to frontend/.env for live Google OAuth.');
+    }
+  };
+
   // 2. Initialize Sessions Scoped Per Google Account & Sync from Cloud
   useEffect(() => {
     const initUserSessions = async () => {
-      const uid = user?.id || 'guest';
+      const isGuestUser = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
+      if (isGuestUser) {
+        // Ephemeral in-memory guest session: never load or write to localStorage
+        const fresh = createNewSession('Guest Session');
+        setSessions([fresh]);
+        setActiveSessionIdState(fresh.id);
+        setMessages([]);
+        setUploadedFile(null);
+        return;
+      }
+
+      const uid = user.id;
       let userSessions = loadSessions(uid);
 
       // If signed in with Google via Supabase, sync from cloud across devices
-      if (user && !user.isGuest) {
-        const cloudSessions = await syncCloudSessions(user.id);
-        if (cloudSessions && cloudSessions.length > 0) {
-          userSessions = cloudSessions;
-        }
+      const cloudSessions = await syncCloudSessions(user.id);
+      if (cloudSessions && cloudSessions.length > 0) {
+        userSessions = cloudSessions;
       }
 
       if (userSessions.length > 0) {
@@ -161,6 +178,7 @@ export default function App() {
 
   // Helper to persist current session updates to sessions state, localStorage & Supabase Cloud
   const persistSessionUpdate = (newMessages, newFile = undefined, customTitle = null) => {
+    const isGuestUser = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
     const uid = user?.id || 'guest';
     setSessions((prev) => {
       let targetSession = null;
@@ -169,7 +187,7 @@ export default function App() {
           let title = s.title;
           if (customTitle) {
             title = customTitle;
-          } else if ((s.title === 'New Chat' || !s.title) && newMessages.length > 0) {
+          } else if ((s.title === 'New Chat' || s.title === 'Guest Session' || !s.title) && newMessages.length > 0) {
             const firstUserMsg = newMessages.find((m) => m.role === 'user');
             if (firstUserMsg) {
               title = deriveChatTitle(firstUserMsg.content);
@@ -188,9 +206,11 @@ export default function App() {
         return s;
       });
 
-      saveSessions(updated, uid);
-      if (targetSession && user && !user.isGuest) {
-        saveSessionToCloud(targetSession, user.id);
+      if (!isGuestUser) {
+        saveSessions(updated, uid);
+        if (targetSession) {
+          saveSessionToCloud(targetSession, user.id);
+        }
       }
       return updated;
     });
@@ -198,11 +218,14 @@ export default function App() {
 
   // Handle Switch Session
   const handleSelectSession = (sessionId) => {
+    const isGuestUser = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
     const uid = user?.id || 'guest';
     const target = sessions.find((s) => s.id === sessionId);
     if (!target) return;
     setActiveSessionIdState(sessionId);
-    setActiveSessionId(sessionId, uid);
+    if (!isGuestUser) {
+      setActiveSessionId(sessionId, uid);
+    }
     setMessages(target.messages || []);
     setUploadedFile(target.uploadedFile || null);
     if (target.presetId) setActivePreset(target.presetId);
@@ -210,27 +233,44 @@ export default function App() {
 
   // Handle "+ New chat" Button
   const handleNewChat = () => {
-    const uid = user?.id || 'guest';
+    const isGuestUser = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
+    if (isGuestUser) {
+      // In guest mode, chats are ephemeral: reset active session without saving to history
+      const fresh = createNewSession('Guest Session');
+      setSessions([fresh]);
+      setActiveSessionIdState(fresh.id);
+      setMessages([]);
+      setUploadedFile(null);
+      return;
+    }
+
+    const uid = user.id;
     const fresh = createNewSession('New Chat');
     const updated = [fresh, ...sessions];
     setSessions(updated);
     setActiveSessionIdState(fresh.id);
     setActiveSessionId(fresh.id, uid);
     saveSessions(updated, uid);
-    if (user && !user.isGuest) {
-      saveSessionToCloud(fresh, user.id);
-    }
+    saveSessionToCloud(fresh, user.id);
     setMessages([]);
     setUploadedFile(null);
   };
 
   // Handle Delete Session
   const handleDeleteSession = (sessionId) => {
-    const uid = user?.id || 'guest';
-    const remaining = sessions.filter((s) => s.id !== sessionId);
-    if (user && !user.isGuest) {
-      deleteSessionFromCloud(sessionId, user.id);
+    const isGuestUser = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
+    if (isGuestUser) {
+      const fresh = createNewSession('Guest Session');
+      setSessions([fresh]);
+      setActiveSessionIdState(fresh.id);
+      setMessages([]);
+      setUploadedFile(null);
+      return;
     }
+
+    const uid = user.id;
+    const remaining = sessions.filter((s) => s.id !== sessionId);
+    deleteSessionFromCloud(sessionId, user.id);
 
     if (remaining.length === 0) {
       const brandNew = createNewSession('New Chat');
@@ -238,9 +278,7 @@ export default function App() {
       setActiveSessionIdState(brandNew.id);
       setActiveSessionId(brandNew.id, uid);
       saveSessions([brandNew], uid);
-      if (user && !user.isGuest) {
-        saveSessionToCloud(brandNew, user.id);
-      }
+      saveSessionToCloud(brandNew, user.id);
       setMessages([]);
       setUploadedFile(null);
     } else {
@@ -413,6 +451,8 @@ export default function App() {
         onDeleteSession={handleDeleteSession}
         onOpenSettings={() => setIsSettingsOpen(true)}
         falkorConnected={falkorConnected}
+        user={user}
+        onSignIn={handleSignIn}
       />
 
       {/* Main Workspace Feed */}
@@ -453,6 +493,8 @@ export default function App() {
         onSettingsSaved={(newSettings) => {
           if (newSettings.selectedModel) setSelectedModel(newSettings.selectedModel);
         }}
+        user={user}
+        onSignIn={handleSignIn}
       />
 
       <RemediationModal

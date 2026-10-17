@@ -9,6 +9,8 @@ import {
   Database,
   Sparkles,
   Shield,
+  ShieldAlert,
+  LogIn,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -21,7 +23,10 @@ export default function Sidebar({
   onDeleteSession,
   onOpenSettings,
   falkorConnected,
+  user,
+  onSignIn,
 }) {
+  const isGuest = !user || user.isGuest || user.id === 'guest' || user.id === 'guest-analyst';
   const handleSelect = (id) => {
     onSelectSession(id);
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -110,12 +115,39 @@ export default function Sidebar({
           {isOpen && (
             <div className="px-2 pt-2 pb-1.5">
               <span className="text-[10px] font-semibold tracking-wider uppercase text-gemini-muted">
-                Recent Chats
+                {isGuest ? 'Session Mode' : 'Recent Chats'}
               </span>
             </div>
           )}
 
-          {sessions.length === 0 ? (
+          {isGuest ? (
+            isOpen ? (
+              <div className="px-2 py-3 animate-fade-in">
+                <div className="p-3 rounded-xl bg-gemini-surface/60 border border-gemini-border text-center space-y-2.5">
+                  <div className="w-8 h-8 mx-auto rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <ShieldAlert className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Guest Mode</p>
+                    <p className="text-[11px] text-gemini-muted mt-0.5 leading-relaxed">
+                      Chats are temporary and not saved to history. Sign in to save and sync conversations.
+                    </p>
+                  </div>
+                  <button
+                    onClick={onSignIn}
+                    className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-medium transition shadow-sm flex items-center justify-center space-x-1.5"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In to Save</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center py-3" title="Guest Mode: Chats are not stored in history">
+                <ShieldAlert className="w-4 h-4 text-amber-400/70" />
+              </div>
+            )
+          ) : sessions.length === 0 ? (
             isOpen && (
               <div className="px-3 py-6 text-center text-xs text-gemini-muted">
                 No previous chats yet.<br />
