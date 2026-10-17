@@ -52,29 +52,29 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-gemini-surface border border-gemini-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2.5 sm:p-4 animate-fade-in">
+      <div className="bg-gemini-surface border border-gemini-border rounded-2xl w-[95%] max-w-lg mx-auto shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-gemini-border flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-gemini-card border border-gemini-border text-gemini-accent">
-              <Database className="w-5 h-5 text-gemini-accent" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gemini-border flex items-center justify-between">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="p-2 rounded-xl bg-gemini-card border border-gemini-border text-gemini-accent shrink-0">
+              <Database className="w-4 h-4 sm:w-5 sm:h-5 text-gemini-accent" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-white">FalkorDB Database Settings</h2>
-              <p className="text-xs text-gemini-muted">Configure confidential FalkorDB cluster & database credentials</p>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-semibold text-white truncate">FalkorDB Database Settings</h2>
+              <p className="text-[11px] sm:text-xs text-gemini-muted truncate">Configure confidential FalkorDB cluster credentials</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gemini-muted hover:text-white hover:bg-gemini-surfaceHover transition"
+            className="p-1.5 rounded-lg text-gemini-muted hover:text-white hover:bg-gemini-surfaceHover transition shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body: FalkorDB Configuration */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 flex-1">
           {savedBanner && (
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2 animate-fade-in">
               <CheckCircle className="w-4 h-4" />
@@ -82,9 +82,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
+          <div className="space-y-3.5 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="col-span-1 sm:col-span-2">
                 <label className="block text-xs font-medium text-gemini-text mb-1">
                   FalkorDB Host
                 </label>
@@ -96,7 +96,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
                   className="w-full px-3 py-2 text-xs rounded-lg bg-gemini-card border border-gemini-border text-white placeholder-gemini-muted focus:outline-none focus:border-gemini-accent"
                 />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-xs font-medium text-gemini-text mb-1">
                   Port
                 </label>
@@ -205,16 +205,16 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-gemini-border bg-gemini-card/50 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gemini-border bg-gemini-card/50 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-medium text-gemini-muted hover:text-white transition"
+            className="px-3 sm:px-4 py-2 rounded-lg text-xs font-medium text-gemini-muted hover:text-white transition"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition"
+            className="px-4 sm:px-5 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition"
           >
             Save Settings
           </button>

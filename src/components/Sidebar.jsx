@@ -22,6 +22,27 @@ export default function Sidebar({
   onOpenSettings,
   falkorConnected,
 }) {
+  const handleSelect = (id) => {
+    onSelectSession(id);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      onToggle();
+    }
+  };
+
+  const handleNew = () => {
+    onNewChat();
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      onToggle();
+    }
+  };
+
+  const handleSettings = () => {
+    onOpenSettings();
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      onToggle();
+    }
+  };
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -35,7 +56,7 @@ export default function Sidebar({
       {/* Sidebar Container */}
       <aside
         className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-gemini-card border-r border-gemini-border transition-all duration-300 ease-in-out ${
-          isOpen ? 'w-64 translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0 md:w-16'
+          isOpen ? 'w-64 max-w-[85vw] translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0 md:w-16'
         }`}
       >
         {/* Top Header: Hamburger & New Chat Button */}
@@ -73,7 +94,7 @@ export default function Sidebar({
         {/* "+ New chat" Button (Gemini Style) */}
         <div className="p-3">
           <button
-            onClick={onNewChat}
+            onClick={handleNew}
             className={`w-full flex items-center rounded-full bg-gemini-surface hover:bg-gemini-surfaceHover border border-gemini-border hover:border-gemini-accent/40 text-gemini-text hover:text-white transition shadow-sm group ${
               isOpen ? 'px-4 py-2.5 space-x-3' : 'justify-center p-2.5'
             }`}
@@ -107,7 +128,7 @@ export default function Sidebar({
               return (
                 <div
                   key={s.id}
-                  onClick={() => onSelectSession(s.id)}
+                  onClick={() => handleSelect(s.id)}
                   className={`group relative flex items-center rounded-xl cursor-pointer transition ${
                     isOpen ? 'px-3 py-2 space-x-2.5' : 'justify-center p-2.5'
                   } ${
@@ -166,7 +187,7 @@ export default function Sidebar({
 
           {/* Settings Trigger */}
           <button
-            onClick={onOpenSettings}
+            onClick={handleSettings}
             className={`w-full flex items-center rounded-lg text-gemini-muted hover:text-white hover:bg-gemini-surface transition ${
               isOpen ? 'px-2.5 py-1.5 space-x-2 text-xs' : 'justify-center p-2'
             }`}

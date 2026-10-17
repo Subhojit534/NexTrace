@@ -40,7 +40,9 @@ export default function App() {
   // Chat Sessions & History State (Google Gemini style)
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionIdState] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
 
   // User Auth State
   const [user, setUser] = useState(null);
@@ -415,13 +417,14 @@ export default function App() {
 
       {/* Main Workspace Feed */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+        className={`flex-1 flex flex-col min-h-screen w-full min-w-0 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'md:ml-64' : 'md:ml-16'
         }`}
       >
         {/* Top Navbar */}
         <Navbar
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           user={user}
           setUser={setUser}
         />

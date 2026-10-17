@@ -13,25 +13,25 @@ export default function KillChainCards({ killChain = [] }) {
   if (!killChain || killChain.length === 0) return null;
 
   return (
-    <div className="my-4">
-      <div className="flex items-center justify-between mb-2.5">
+    <div className="my-3 sm:my-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2.5">
         <span className="text-xs font-semibold text-gemini-text tracking-wide uppercase flex items-center space-x-1.5">
           <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
           <span>Cyber Kill-Chain Traversal & Containment</span>
         </span>
-        <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium">
+        <span className="text-[10px] sm:text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium w-fit">
           Autonomous Containment Active
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-2.5">
         {killChain.map((step, idx) => {
           const Icon = STAGE_ICONS[idx % STAGE_ICONS.length];
           const isContained = step.status === 'CONTAINED';
           return (
             <div
               key={idx}
-              className={`p-3 rounded-xl border flex flex-col justify-between transition relative overflow-hidden ${
+              className={`p-2.5 sm:p-3 rounded-xl border flex flex-col justify-between transition relative overflow-hidden ${
                 isContained
                   ? 'bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                   : 'bg-gemini-card border-gemini-border hover:border-gemini-border/80'

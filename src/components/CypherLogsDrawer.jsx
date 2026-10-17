@@ -18,28 +18,28 @@ export default function CypherLogsDrawer({ cypherLogs = [], mutations = [], seve
       {/* Header Accordion Toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gemini-surfaceHover/50 transition"
+        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between text-left hover:bg-gemini-surfaceHover/50 transition"
       >
-        <div className="flex items-center space-x-2.5">
-          <Terminal className="w-4 h-4 text-gemini-accent" />
+        <div className="flex items-center space-x-2 flex-wrap gap-y-1 mr-2 min-w-0">
+          <Terminal className="w-4 h-4 text-gemini-accent shrink-0" />
           <span className="text-xs font-semibold text-white">
-            FalkorDB Cypher & MCP Tool Execution Logs ({cypherLogs.length} Queries)
+            FalkorDB Cypher & MCP Logs ({cypherLogs.length})
           </span>
           {severanceVerified && (
-            <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center space-x-1">
+            <span className="text-[9px] sm:text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 sm:px-2 py-0.5 rounded-full flex items-center space-x-1 shrink-0">
               <CheckCircle2 className="w-3 h-3" />
               <span>0 Paths Remaining</span>
             </span>
           )}
         </div>
-        <div className="text-gemini-muted">
+        <div className="text-gemini-muted shrink-0">
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </div>
       </button>
 
       {/* Accordion Content */}
       {isOpen && (
-        <div className="p-4 pt-1 border-t border-gemini-border/60 space-y-3.5 bg-gemini-surface/40">
+        <div className="p-3 sm:p-4 pt-1 border-t border-gemini-border/60 space-y-3 bg-gemini-surface/40">
           {/* Mutations Applied */}
           {mutations.length > 0 && (
             <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">

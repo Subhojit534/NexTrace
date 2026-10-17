@@ -67,11 +67,11 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
 
   if (isUser) {
     return (
-      <div className="flex justify-end my-4 animate-fade-in">
-        <div className="max-w-2xl bg-gemini-surface border border-gemini-border rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white shadow-sm">
+      <div className="flex justify-end my-3 sm:my-4 animate-fade-in">
+        <div className="max-w-[88%] sm:max-w-2xl bg-gemini-surface border border-gemini-border rounded-2xl rounded-tr-sm px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-white shadow-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
           {message.attachedFile && (
-            <div className="mt-2 pt-2 border-t border-gemini-border/50 text-[11px] text-gemini-muted flex items-center space-x-1.5">
+            <div className="mt-2 pt-2 border-t border-gemini-border/50 text-[10px] sm:text-[11px] text-gemini-muted flex items-center space-x-1.5 flex-wrap">
               <span className="px-1.5 py-0.5 rounded bg-gemini-card border border-gemini-border font-mono text-blue-300">
                 📄 {message.attachedFile}
               </span>
@@ -86,16 +86,16 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
   const blast = message.blast_radius;
 
   return (
-    <div className="flex items-start space-x-3.5 my-6 animate-fade-in">
+    <div className="flex items-start space-x-2 sm:space-x-3.5 my-3 sm:my-6 animate-fade-in w-full min-w-0">
       {/* Agent Avatar */}
-      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 mt-1">
-        <Sparkles className="w-4 h-4 text-white" />
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 mt-0.5">
+        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
       </div>
 
       {/* Main Message Body */}
-      <div className="flex-1 max-w-4xl overflow-hidden">
+      <div className="flex-1 max-w-4xl overflow-hidden min-w-0">
         {/* Author & Model Tag */}
-        <div className="flex items-center space-x-2 mb-1.5">
+        <div className="flex items-center flex-wrap gap-1.5 mb-1.5">
           <span className="text-xs font-semibold text-white">NexTrace Agent</span>
           {message.model_used && (
             <span className="text-[10px] text-gemini-muted bg-gemini-surface px-2 py-0.5 rounded-full border border-gemini-border">
@@ -111,50 +111,50 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
         </div>
 
         {/* Narrative Formatted Response */}
-        <div className="bg-gemini-surface/60 border border-gemini-border/80 rounded-2xl p-4 shadow-sm">
+        <div className="bg-gemini-surface/60 border border-gemini-border/80 rounded-2xl p-3 sm:p-4 shadow-sm w-full min-w-0">
           {renderFormattedText(message.content || message.reply)}
 
           {/* Blast Radius Stat Cards */}
           {blast && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 pt-2 border-t border-gemini-border/50">
-              <div className="p-3 rounded-xl bg-gemini-card border border-gemini-border">
-                <span className="text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 my-3 sm:my-4 pt-2 border-t border-gemini-border/50">
+              <div className="p-2 sm:p-3 rounded-xl bg-gemini-card border border-gemini-border">
+                <span className="text-[9px] sm:text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
                   Total Impacted
                 </span>
-                <span className="text-xl font-bold text-white font-mono">
+                <span className="text-lg sm:text-xl font-bold text-white font-mono">
                   {blast.total_affected_entities ?? 0}
                 </span>
-                <span className="text-[10px] text-gemini-muted block mt-0.5">Entities Downstream</span>
+                <span className="text-[9px] sm:text-[10px] text-gemini-muted block mt-0.5">Entities Downstream</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-gemini-card border border-gemini-border">
-                <span className="text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
+              <div className="p-2 sm:p-3 rounded-xl bg-gemini-card border border-gemini-border">
+                <span className="text-[9px] sm:text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
                   Services
                 </span>
-                <span className="text-xl font-bold text-blue-400 font-mono">
+                <span className="text-lg sm:text-xl font-bold text-blue-400 font-mono">
                   {blast.downstream_services?.length ?? 0}
                 </span>
-                <span className="text-[10px] text-gemini-muted block mt-0.5">Exposed Workloads</span>
+                <span className="text-[9px] sm:text-[10px] text-gemini-muted block mt-0.5">Exposed Workloads</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-gemini-card border border-gemini-border">
-                <span className="text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
+              <div className="p-2 sm:p-3 rounded-xl bg-gemini-card border border-gemini-border">
+                <span className="text-[9px] sm:text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
                   IAM Roles
                 </span>
-                <span className="text-xl font-bold text-purple-400 font-mono">
+                <span className="text-lg sm:text-xl font-bold text-purple-400 font-mono">
                   {blast.accessible_iam_roles?.length ?? 0}
                 </span>
-                <span className="text-[10px] text-gemini-muted block mt-0.5">Assumable Identities</span>
+                <span className="text-[9px] sm:text-[10px] text-gemini-muted block mt-0.5">Assumable Identities</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-gemini-card border border-gemini-border">
-                <span className="text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
+              <div className="p-2 sm:p-3 rounded-xl bg-gemini-card border border-gemini-border">
+                <span className="text-[9px] sm:text-[10px] uppercase font-semibold text-gemini-muted block mb-1">
                   Crown Jewels
                 </span>
-                <span className="text-xl font-bold text-amber-400 font-mono">
+                <span className="text-lg sm:text-xl font-bold text-amber-400 font-mono">
                   {blast.exposed_crown_jewels?.length ?? 0}
                 </span>
-                <span className="text-[10px] text-gemini-muted block mt-0.5">High-Value Stores</span>
+                <span className="text-[9px] sm:text-[10px] text-gemini-muted block mt-0.5">High-Value Stores</span>
               </div>
             </div>
           )}
@@ -181,16 +181,16 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
 
           {/* Remediation Bundle CTA */}
           {message.remediation_bundle && Object.keys(message.remediation_bundle).length > 0 && (
-            <div className="mt-3.5 pt-3 border-t border-gemini-border/60 flex items-center justify-between">
+            <div className="mt-3 pt-3 border-t border-gemini-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <span className="text-xs text-gemini-muted flex items-center space-x-1.5">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>Zero-trust cloud isolation policies generated</span>
               </span>
               <button
                 onClick={() => onOpenRemediation(message.remediation_bundle)}
-                className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 flex items-center space-x-1.5 transition"
+                className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 flex items-center space-x-1.5 transition text-center"
               >
-                <FileCode className="w-3.5 h-3.5" />
+                <FileCode className="w-3.5 h-3.5 shrink-0" />
                 <span>View Remediation Bundle (Terraform/K8s)</span>
               </button>
             </div>
