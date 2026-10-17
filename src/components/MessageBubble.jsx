@@ -7,52 +7,188 @@ import CypherLogsDrawer from './CypherLogsDrawer';
 export default function MessageBubble({ message, onSelectFollowup, onOpenRemediation }) {
   const isUser = message.role === 'user';
 
-  // Simple clean markdown formatter for agent messages
+  // Rich markdown formatter for agent messages with Table, Blockquote, and List support
   const renderFormattedText = (text) => {
     if (!text) return null;
-    const lines = text.split('\n');
+    const rawLines = text.split('\n');
+
+    const blocks = [];
+    let i = 0;
+
+    while (i < rawLines.length) {
+      const line = rawLines[i];
+      const trimmed = line.trim();
+
+      // Check if this line starts a Markdown Table
+      if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')) {
+        const tableLines = [trimmed];
+        i++;
+        while (i < rawLines.length) {
+          const nextTrimmed = rawLines[i].trim();
+          if (nextTrimmed.startsWith('|') && nextTrimmed.endsWith('|')) {
+            tableLines.push(nextTrimmed);
+            i++;
+          } else if (
+            nextTrimmed === '' &&
+            i + 1 < rawLines.length &&
+            rawLines[i + 1].trim().startsWith('|') &&
+            rawLines[i + 1].trim().endsWith('|')
+          ) {
+            // Handle loose LLM markdown with single blank lines between table rows
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        // Process collected table lines
+        if (tableLines.length >= 2) {
+          const isSeparator = (str) => /^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(str);
+          const parseRow = (str) => {
+            let parts = str.split('|').map((c) => c.trim());
+            if (parts.length > 0 && parts[0] === '') parts.shift();
+            if (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
+            return parts;
+          };
+
+          const headerRow = parseRow(tableLines[0]);
+          let bodyLines = tableLines.slice(1);
+          if (bodyLines.length > 0 && isSeparator(bodyLines[0])) {
+            bodyLines = bodyLines.slice(1);
+          }
+          const bodyRows = bodyLines.filter((l) => !isSeparator(l)).map(parseRow);
+
+          blocks.push({
+            type: 'table',
+            headers: headerRow,
+            rows: bodyRows,
+          });
+          continue;
+        } else {
+          blocks.push({ type: 'p', content: tableLines[0] });
+          continue;
+        }
+      }
+
+      // Check code block ```
+      if (trimmed.startsWith('```')) {
+        const codeLines = [];
+        const lang = trimmed.slice(3).trim();
+        i++;
+        while (i < rawLines.length && !rawLines[i].trim().startsWith('```')) {
+          codeLines.push(rawLines[i]);
+          i++;
+        }
+        if (i < rawLines.length) i++;
+        blocks.push({ type: 'code', code: codeLines.join('\n'), lang });
+        continue;
+      }
+
+      // Check blockquote >
+      if (trimmed.startsWith('> ')) {
+        blocks.push({ type: 'quote', content: trimmed.replace(/^>\s*/, '') });
+        i++;
+        continue;
+      }
+
+      // Headers, lists, and paragraphs
+      if (trimmed.startsWith('### ')) {
+        blocks.push({ type: 'h3', content: trimmed.replace('### ', '') });
+      } else if (trimmed.startsWith('#### ')) {
+        blocks.push({ type: 'h4', content: trimmed.replace('#### ', '') });
+      } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        blocks.push({ type: 'bullet', content: trimmed.replace(/^[-•]\s*/, '') });
+      } else if (/^\d+\.\s/.test(trimmed)) {
+        const num = trimmed.match(/^(\d+\.)\s/)[1];
+        blocks.push({ type: 'number', num, content: trimmed.replace(/^\d+\.\s/, '') });
+      } else if (trimmed === '') {
+        blocks.push({ type: 'space' });
+      } else {
+        blocks.push({ type: 'p', content: line });
+      }
+      i++;
+    }
 
     return (
       <div className="space-y-2 text-sm leading-relaxed text-gemini-text">
-        {lines.map((line, idx) => {
-          if (line.startsWith('### ')) {
+        {blocks.map((block, idx) => {
+          if (block.type === 'table') {
+            return (
+              <div key={idx} className="my-3 overflow-x-auto rounded-xl border border-gemini-border bg-gemini-card/70 shadow-sm">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-gemini-border bg-gemini-surface/90">
+                      {block.headers.map((h, hIdx) => (
+                        <th key={hIdx} className="px-3.5 py-2.5 font-semibold text-white tracking-wide">
+                          <span dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(h) }} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gemini-border/50">
+                    {block.rows.map((row, rIdx) => (
+                      <tr key={rIdx} className="hover:bg-gemini-surface/40 transition">
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="px-3.5 py-2.5 text-gemini-text leading-relaxed align-top">
+                            <span dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(cell) }} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+          if (block.type === 'code') {
+            return (
+              <pre key={idx} className="my-2 p-3 rounded-xl bg-gemini-card border border-gemini-border text-xs font-mono text-purple-200 overflow-x-auto leading-relaxed">
+                <code>{block.code}</code>
+              </pre>
+            );
+          }
+          if (block.type === 'quote') {
+            return (
+              <div key={idx} className="my-2 pl-3 py-1.5 border-l-2 border-gemini-accent bg-gemini-surface/40 rounded-r-lg text-xs font-mono text-purple-200 break-all leading-relaxed">
+                <span dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
+              </div>
+            );
+          }
+          if (block.type === 'h3') {
             return (
               <h3 key={idx} className="text-base font-bold text-white pt-2 pb-1 border-b border-gemini-border/40">
-                {line.replace('### ', '')}
+                {block.content}
               </h3>
             );
           }
-          if (line.startsWith('#### ')) {
+          if (block.type === 'h4') {
             return (
               <h4 key={idx} className="text-sm font-semibold text-gemini-accent pt-1.5">
-                {line.replace('#### ', '')}
+                {block.content}
               </h4>
             );
           }
-          if (line.startsWith('- ')) {
-            const rawContent = line.replace('- ', '');
+          if (block.type === 'bullet') {
             return (
               <div key={idx} className="flex items-start space-x-2 pl-2">
                 <span className="text-gemini-accent font-bold mt-1">•</span>
-                <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(rawContent) }} />
+                <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
               </div>
             );
           }
-          if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ')) {
-            const num = line.slice(0, 3);
-            const rawContent = line.slice(3);
+          if (block.type === 'number') {
             return (
               <div key={idx} className="flex items-start space-x-2 pl-2">
-                <span className="text-gemini-muted font-bold font-mono text-xs mt-0.5">{num}</span>
-                <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(rawContent) }} />
+                <span className="text-gemini-muted font-bold font-mono text-xs mt-0.5">{block.num}</span>
+                <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
               </div>
             );
           }
-          if (line.trim() === '') {
+          if (block.type === 'space') {
             return <div key={idx} className="h-1" />;
           }
           return (
-            <p key={idx} dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(line) }} />
+            <p key={idx} dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
           );
         })}
       </div>
