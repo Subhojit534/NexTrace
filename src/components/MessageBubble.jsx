@@ -157,14 +157,14 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
           if (block.type === 'h3') {
             return (
               <h3 key={idx} className="text-base font-bold text-white pt-2 pb-1 border-b border-gemini-border/40">
-                {block.content}
+                <span dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
               </h3>
             );
           }
           if (block.type === 'h4') {
             return (
               <h4 key={idx} className="text-sm font-semibold text-gemini-accent pt-1.5">
-                {block.content}
+                <span dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(block.content) }} />
               </h4>
             );
           }
@@ -195,8 +195,20 @@ export default function MessageBubble({ message, onSelectFollowup, onOpenRemedia
     );
   };
 
+  const escapeHtml = (text) => {
+    if (typeof text !== 'string') return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   const formatInlineMarkdown = (str) => {
-    return str
+    if (!str) return '';
+    const safe = escapeHtml(String(str));
+    return safe
       .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
       .replace(/`([^`]+)`/g, '<code class="bg-gemini-card px-1.5 py-0.5 rounded text-purple-300 font-mono text-xs border border-gemini-border">$1</code>');
   };

@@ -34,10 +34,24 @@ export function saveStoredSettings(settings) {
   }
 }
 
+export function getOrCreateSessionId() {
+  try {
+    let sid = sessionStorage.getItem('nextrace_session_id');
+    if (!sid) {
+      sid = 'sess_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now().toString(36);
+      sessionStorage.setItem('nextrace_session_id', sid);
+    }
+    return sid;
+  } catch (e) {
+    return 'default_session';
+  }
+}
+
 function buildHeaders() {
   const settings = getStoredSettings();
   const headers = {
     'Content-Type': 'application/json',
+    'X-Session-ID': getOrCreateSessionId(),
   };
 
   if (settings.groqApiKey) headers['X-Groq-API-Key'] = settings.groqApiKey;

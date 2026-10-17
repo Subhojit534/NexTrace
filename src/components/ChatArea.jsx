@@ -61,6 +61,19 @@ export default function ChatArea({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      alert('Only .json graph architecture files are permitted.');
+      e.target.value = '';
+      return;
+    }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB limit
+    if (file.size > MAX_SIZE) {
+      alert(`File size exceeds the 5MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please upload a smaller topology file.`);
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
